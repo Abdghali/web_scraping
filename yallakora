@@ -1,0 +1,68 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+date = input ("Please enter a Date in the following format MM/DD/YYYY: ")
+page = requests.get(f"https://www.yallakora.com/Match-Center/?late={date}")
+
+
+def main(page):
+    src = page.content
+    soup = BeautifulSoup(src,"lxml")
+    matches_details = []
+    
+    # get all matchCard
+    championships = soup.find_all("div",{'class': 'matchCard'})
+    print(f'number of MatchCard : {len(championships)}')
+
+    # get_match_info(championships[0],matches_details)
+
+    # itirate on all matchCard (championships) 
+    for i in range(len(championships)):
+        get_match_info(championships[i],matches_details)
+        
+
+    keys= matches_details[0].keys()
+
+    with open('match_details.csv', 'w') as output_file:
+        dict_writer=csv.DictWriter(output_file,keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(matches_details)
+        print("File created")
+        
+
+
+
+def get_match_info(championships,matches_details):
+
+    # you have two ways to get the contents: either by using the find() function or by using .contents[index].
+    # championship_title = championships.find('div',{'class': 'title'})
+    championship_title = championships.contents[1].find("h2").text.strip()
+    print(f'title : {championship_title}')
+
+    all_matches = championships.contents[3].find_all('li')
+    print(f'li : {all_matches}')
+ 
+
+    for i in range(len(all_matches)):
+        # get team names
+        teamA = all_matches [i]. find('div', {'class' :'teamA'}).text.strip()
+        teamB = all_matches [i]. find('div', {'class' :'teamB'}).text.strip()
+        print(teamA)
+        print(teamA)
+
+        # get score
+        match_result = all_matches[i].find("div",{'class': 'MResult'}).find_all('span',{'class': 'score'})
+        score = f"{match_result[0].text.strip()}- {match_result[1].text.strip()}"
+        print(score)
+
+        # get Match_time
+        match_time = all_matches [i]. find('div', {'class': 'MResult'}).find('span',{'class': 'time'}).text.strip()
+        print(match_time)
+
+        #  add match info to matches_details
+        matches_details.append({ "Championship Name": championship_title, "First team": teamA,
+                                 "Second Team": teamB, "Match time": match_time, "Result": score })
+
+
+main(page)
