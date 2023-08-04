@@ -1,9 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import matplotlib.pyplot as plt
 
-date = input ("Please enter a Date in the following format MM/DD/YYYY: ")
-page = requests.get(f"https://www.yallakora.com/Match-Center/?late={date}")
+# date = input ("Please enter a Date in the following format MM/DD/YYYY: ")
+date = '8/3/2023'
+page = requests.get(f"https://www.yallakora.com/Match-Center/?date={date}#")
 
 
 def main(page):
@@ -15,7 +17,6 @@ def main(page):
     championships = soup.find_all("div",{'class': 'matchCard'})
     print(f'number of MatchCard : {len(championships)}')
 
-    # get_match_info(championships[0],matches_details)
 
     # itirate on all matchCard (championships) 
     for i in range(len(championships)):
@@ -30,6 +31,7 @@ def main(page):
         dict_writer.writerows(matches_details)
         print("File created")
         
+    draw_line_chart(matches_details)
 
 
 
@@ -38,31 +40,53 @@ def get_match_info(championships,matches_details):
     # you have two ways to get the contents: either by using the find() function or by using .contents[index].
     # championship_title = championships.find('div',{'class': 'title'})
     championship_title = championships.contents[1].find("h2").text.strip()
-    print(f'title : {championship_title}')
+    # print(f'title : {championship_title}')
 
     all_matches = championships.contents[3].find_all('li')
-    print(f'li : {all_matches}')
+    # print(f'li : {all_matches}')
  
 
     for i in range(len(all_matches)):
+
         # get team names
         teamA = all_matches [i]. find('div', {'class' :'teamA'}).text.strip()
         teamB = all_matches [i]. find('div', {'class' :'teamB'}).text.strip()
-        print(teamA)
-        print(teamA)
+        # print(teamA)
+        # print(teamA)
 
         # get score
         match_result = all_matches[i].find("div",{'class': 'MResult'}).find_all('span',{'class': 'score'})
         score = f"{match_result[0].text.strip()}- {match_result[1].text.strip()}"
-        print(score)
+        # print(score)
 
         # get Match_time
         match_time = all_matches [i]. find('div', {'class': 'MResult'}).find('span',{'class': 'time'}).text.strip()
-        print(match_time)
+        # print(match_time)
 
         #  add match info to matches_details
         matches_details.append({ "Championship Name": championship_title, "First team": teamA,
                                  "Second Team": teamB, "Match time": match_time, "Result": score })
 
 
+
+# Function to draw the line chart
+def draw_line_chart(matches_details):
+    times = [match["Match time"] for match in matches_details]
+    championshipNames = [match["Championship Name"] for match in matches_details]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    for championshipName in set(championshipNames):
+        x = [match_time for i, match_time in enumerate(times) if championshipNames[i] == championshipName]
+        y = [i for i in range(len(x))]  # Just to create a line, you can use any other meaningful data if available
+        ax.plot(x, y, label=championshipName)
+
+    ax.set_xlabel("Match Time")
+    ax.set_ylabel("Matches")
+    ax.set_title("Matches Over Time")
+    ax.legend()
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+    
 main(page)
